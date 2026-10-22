@@ -1,0 +1,64 @@
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+model_name = "facebook/blenderbot-400M-distill"
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+conversation_history = []
+print("Chatbot ready! (type 'exit' to quit)\n")
+history_string = "\n".join(conversation_history)
+input_text = input(">")
+prompt = history_string + f"\nUser: {input_text}\nBot:"
+
+inputs = tokenizer(
+    prompt,
+    return_tensors="pt",
+    truncation=True,
+    max_length=512
+)
+
+# For better understanding of the code:
+
+# tokenizer(...): Converts raw text into numerical tokens the model can understand.
+# history_string: Previous conversation history used to provide context.
+# input_text: Current user message.
+# return_tensors="pt": Returns PyTorch tensors (required by the model).
+# truncation=True: Truncates input if it exceeds model limits.
+# max_length=512  Maximum number of tokens allowed as input.
+
+outputs = model.generate(
+    **inputs,
+    max_new_tokens=60,
+    no_repeat_ngram_size=3,
+    repetition_penalty=1.3,
+    do_sample=True,
+    temperature=0.6,
+    top_p=0.85
+)
+
+
+
+# For better understanding of the code:
+
+# inputs: Sends the user message and chat history to the model. This helps the chatbot understand the full conversation before replying.
+# max_new_tokens: Sets the maximum length of the reply. It stops the model from writing too much text.
+# no_repeat_ngram_size: Stops the model from repeating the same 3-word phrases again and again.
+# repetition_penalty: Reduces repeated words in the response so the output sounds more natural.
+# do_sample=True: Makes the chatbot responses more random and less fixed, so replies feel more natural.
+# temperature: Controls how creative the response is. Lower = safer answers, higher = more creative answers.
+# top_p: Keeps only the most likely word choices when generating text, which helps the response stay clear and meaningful.
+
+
+response = tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
+print(response)
+
+
+# tokenizer.decode(outputs[0]): Converts the model’s output from numbers (tokens) back into readable text. The model first generates numbers, and this step turns them into a human-readable sentence.
+# outputs[0]: Takes the first generated response from the model (since the model can generate multiple outputs internally).
+# skip_special_tokens=True: Removes special tokens like padding or system symbols so they don’t appear in the final output.
+# .strip(): Removes extra spaces at the beginning and end of the text for a clean output.
+# print(response): Displays the final chatbot reply in the terminal so the user can see it.
+
+
+# for iterative conversation
+conversation_history.append(f"User: {input_text}")
+conversation_history.append(f"Bot: {response}")
+print(conversation_history)
